@@ -6,39 +6,28 @@ class Book {
     }
 }
 
-// UI CLASS:  We will handle UI tasks with this section 
+// UI CLASS:  CRATE / RENDER UI TO THE DOM
 class UI {
     static displayBooks () {
-        const storedBooks = [
-            {
-                title: 'Book One',
-                author: 'John Doe',
-                isbn: '3434434'
-            },
-            {
-                title: 'Book Two',
-                author: 'Jane Doe',
-                isbn: '4554576'
-            },
-        
+        const books = Store.getBooks();
+        books.forEach((book) => UI.addBookToList(book));
+  }
 
-        ];
-        const books = storedBooks;
-        books.forEach((book) =>  UI.addBookToList(book));
-}
     // Now we grab HTML section to display the book list we submit - create HTML - append / render it to the DOM 
     static addBookToList(book) {
-        const list = document.querySelector('#book-list'); // This section displays the book's list we submitted.
+        const list = document.querySelector('#book-list');
         const row = document.createElement('tr');
-              row.innerHTML = `
-              <td>${book.title}</td>
-              <td>${book.author}</td>
-              <td>${book.isbn}</td>
-              <td><a href ="#" class="btn btn-danger btn-sm delete">X</a></td>
-              `;  
-    list.appendChild(row);    
-        
-    }
+    
+        row.innerHTML = `
+          <td>${book.title}</td>
+          <td>${book.author}</td>
+          <td>${book.isbn}</td>
+          <td><a href="#" class="btn btn-danger btn-sm delete">X</a></td>
+        `;
+    
+        list.appendChild(row);
+      }
+    
     // NOTE: we target the parentElement of parentElement so the entire row can be removed
     // Otherwise only remove button will be removed when we click on it.
     static deleteBook(el) {
@@ -61,7 +50,6 @@ class UI {
     // Make the POP UP disappear after 4 seconds
     setTimeout(() => document.querySelector('.alert').remove(), 2000);
 
-
 }
 
 
@@ -72,11 +60,44 @@ class UI {
         document.querySelector('#isbn').value = '';
     }
 }
-// EVENT: ADD A BOOK
-document.querySelector('#book-form').addEventListener('submit', (e) => {
 
-    // Fist we need to prevent actualy submit
-    e.preventDefault();
+// STORE CLASS: STORE / INSERT DATA IN LOCALSTORAGE
+class Store {
+    static getBooks() {
+        let books;
+        if(localStorage.getItem('books') === null) { // If no books  -> empty  array of book [] create
+        books = [];
+        } else { // If there is something in local Storage we will get the data
+          books = JSON.parse(localStorage.getItem('books')); // So  JS understand the JS format of objects / array
+        }
+        return books // whatever data is in books
+    }
+
+    // Adding book to localStorage
+    // When this method called. Data must be convert to JSON
+    static addBook(book) {
+        const books = Store.getBooks();
+        books.push(book);
+        localStorage.setItem('books', JSON.stringify(books));
+      }
+    
+    //Remove a book by it's ISBN
+    static removeBook(isbn) {
+        const books = Store.getBooks()
+              books.forEach((book, index) => {
+              if(books.isbn === isbn)  {
+                  books.splice(index, 1);
+              }  
+        }); 
+     localStorage.setItem('books', JSON.stringify(books));    
+    }
+}
+
+
+// PROGRAM WHAT HAPPENS DEPENDS ON ACTION OF USERS
+// USER ACTION: When users fill out input
+document.querySelector('#book-form').addEventListener('submit', (e) => {
+e.preventDefault();
 
     // Now we will grab the form values
     const title = document.querySelector('#title').value;
@@ -90,26 +111,25 @@ document.querySelector('#book-form').addEventListener('submit', (e) => {
 
     // Instatatiate book Class
     const book = new Book(title, author, isbn);
-    
     // Now books get added each time we click the submit button by accessing UI.addBookToList();
     UI.addBookToList(book);
 
+    // Add book to localStorage
+    Store.addBook(book);
     // Show success message
     UI.showAlert('Book Added', 'success')
-
     // Once submited we want all existing texts in the input field to dissepear
     UI.clearField();
   }
 });
 
-// EVENT: We would like to remove a book if we don't want it anymore
+// USER ACTION:  click a remove button
 document.querySelector('#book-list').addEventListener('click', (e) => {
     // Remove book from UI
     UI.deleteBook(e.target);
-
     UI.showAlert('Book Removed', 'success');
-
-})
+    Store.removeBook();
+});
 
 // EVENT: Display list of BOOKS to the DOM... 
 document.addEventListener('DOMContentLoaded', UI.displayBooks);
